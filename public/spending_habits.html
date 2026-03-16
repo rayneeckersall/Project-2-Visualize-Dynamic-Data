@@ -84,6 +84,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .tx-cat { font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-date { font-size: 11px; color: var(--ink3); margin-top: 1px; }
 .tx-amount { font-size: 15px; font-weight: 500; color: var(--ink); font-family: 'DM Serif Display', serif; flex-shrink: 0; }
+.tx-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.tx-btn {
+  padding: 4px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--ink2);
+  border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.tx-btn:hover { border-color: var(--ink3); color: var(--ink); }
+.tx-btn-delete:hover { border-color: var(--impulse); color: var(--impulse); background: var(--impulse-light); }
 .empty { font-size: 12px; color: var(--ink3); text-align: center; padding: 24px 0; }
 
 /* ── RIGHT ── */
@@ -255,6 +263,33 @@ const CAT_COLORS = {
 
 document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 
+// ── SERVER SYNC ──
+
+async function loadFromServer() {
+  try {
+    const res = await fetch('/api/transactions');
+    txs = await res.json();
+    txs.sort((a, b) => b.date.localeCompare(a.date));
+    if (txs.length) render();
+  } catch (e) {
+    console.warn('Could not load from server:', e);
+  }
+}
+
+async function saveToServer() {
+  try {
+    await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(txs)
+    });
+  } catch (e) {
+    console.warn('Could not save to server:', e);
+  }
+}
+
+// ── FORM ──
+
 function setType(t) {
   selType = t;
   document.getElementById('btn-imp').className = 'type-btn' + (t === 'impulse' ? ' sel-impulse' : '');
@@ -280,8 +315,42 @@ function logTx() {
   document.getElementById('f-cat').value = '';
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   setType('');
+  saveToServer();
   render();
 }
+
+// ── HISTORY ACTIONS ──
+
+function deleteTx(i) {
+  txs.splice(i, 1);
+  saveToServer();
+  if (!txs.length) {
+    document.getElementById('viz-empty').style.display = 'flex';
+    document.getElementById('viz').style.display = 'none';
+    document.getElementById('history').innerHTML = '<div class="empty">No transactions yet.</div>';
+    return;
+  }
+  render();
+}
+
+function editTx(i) {
+  const t = txs[i];
+  document.getElementById('f-date').value = t.date;
+  document.getElementById('f-amount').value = t.amount;
+  document.getElementById('f-cat').value = t.cat;
+  setType(t.type);
+  txs.splice(i, 1);
+  saveToServer();
+  if (!txs.length) {
+    document.getElementById('viz-empty').style.display = 'flex';
+    document.getElementById('viz').style.display = 'none';
+    document.getElementById('history').innerHTML = '<div class="empty">No transactions yet.</div>';
+    return;
+  }
+  render();
+}
+
+// ── RENDER ──
 
 function fmt(n) {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -305,7 +374,7 @@ function render() {
 }
 
 function renderHistory() {
-  document.getElementById('history').innerHTML = txs.slice(0, 30).map(t => `
+  document.getElementById('history').innerHTML = txs.slice(0, 30).map((t, i) => `
     <div class="tx">
       <div class="tx-dot" style="background:${t.type === 'impulse' ? 'var(--impulse)' : 'var(--green)'}"></div>
       <div class="tx-info">
@@ -313,6 +382,10 @@ function renderHistory() {
         <div class="tx-date">${fmtDate(t.date)} · ${t.type}</div>
       </div>
       <div class="tx-amount">${fmt(t.amount)}</div>
+      <div class="tx-actions">
+        <button class="tx-btn" onclick="editTx(${i})">Edit</button>
+        <button class="tx-btn tx-btn-delete" onclick="deleteTx(${i})">Delete</button>
+      </div>
     </div>`).join('');
 }
 
@@ -465,6 +538,9 @@ function renderLine() {
     }
   });
 }
+
+// ── INIT ──
+loadFromServer();
 </script>
 </body>
 </html>
