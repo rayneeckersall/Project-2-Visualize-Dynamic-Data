@@ -9,6 +9,10 @@ const DATA_FILE = path.join(__dirname, 'data', 'transactions.json');
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'spending_habits.html'));
+});
+
 // Get all transactions
 app.get('/api/transactions', (req, res) => {
   const data = fs.readFileSync(DATA_FILE, 'utf8');
