@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spending Habits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f7f5f0;
+  --bg2: #edeae2;
+  --surface: #ffffff;
+  --ink: #1c1c1a;
+  --ink2: #5a5a54;
+  --ink3: #9a9a90;
+  --green: #2d6a4f;
+  --green-light: #e8f2ed;
+  --green-mid: #74b898;
+  --impulse: #c0472a;
+  --impulse-light: #faeae6;
+  --border: rgba(28,28,26,0.1);
+}
+
+html, body { height: 100%; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); }
+
+.wrap { display: grid; grid-template-columns: 320px 1fr; height: 100vh; overflow: hidden; }
+
+/* ── LEFT ── */
+.left {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 32px 28px; display: flex; flex-direction: column; gap: 28px;
+  overflow-y: auto; height: 100vh;
+}
+
+.wordmark { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); letter-spacing: -0.3px; line-height: 1.1; }
+.wordmark span { color: var(--green); }
+.tagline { font-size: 12px; color: var(--ink3); margin-top: 4px; letter-spacing: 0.03em; }
+
+.section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink3); margin-bottom: 14px; font-weight: 500; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; color: var(--ink2); margin-bottom: 5px; font-weight: 500; }
+.field input, .field select {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  background: var(--bg); border-radius: 6px; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--ink); outline: none; transition: border-color 0.15s;
+  -webkit-appearance: none; appearance: none;
+}
+.field input:focus, .field select:focus { border-color: var(--green); }
+
+.type-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.type-btn {
+  padding: 9px 8px; border: 1px solid var(--border); background: var(--bg);
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; border-radius: 6px; color: var(--ink2); transition: all 0.15s; text-align: center;
+}
+.type-btn:hover { border-color: var(--ink3); }
+.type-btn.sel-impulse { background: var(--impulse-light); border-color: var(--impulse); color: var(--impulse); }
+.type-btn.sel-deliberate { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+.log-btn {
+  width: 100%; padding: 11px; background: var(--green); color: #fff;
+  border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; letter-spacing: 0.02em;
+}
+.log-btn:hover { opacity: 0.88; }
+
+.divider { border: none; border-top: 1px solid var(--border); }
+
+.history { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; }
+.tx {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--bg); border-radius: 8px; border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-cat { font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-date { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.tx-amount { font-size: 15px; font-weight: 500; color: var(--ink); font-family: 'DM Serif Display', serif; flex-shrink: 0; }
+.empty { font-size: 12px; color: var(--ink3); text-align: center; padding: 24px 0; }
+
+/* ── RIGHT ── */
+.right { padding: 40px 44px; overflow-y: auto; height: 100vh; display: flex; flex-direction: column; gap: 40px; }
+
+/* KPI ROW */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 20px; position: relative; overflow: hidden;
+}
+.kpi.kpi-accent { background: var(--green); border-color: var(--green); }
+.kpi.kpi-accent .kpi-val { color: #fff; }
+.kpi.kpi-accent .kpi-label { color: rgba(255,255,255,0.55); }
+.kpi.kpi-accent .kpi-sub { color: rgba(255,255,255,0.45); }
+.kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); font-weight: 500; margin-bottom: 8px; }
+.kpi-val { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--ink); line-height: 1; }
+.kpi-sub { font-size: 11px; color: var(--ink3); margin-top: 6px; line-height: 1.5; }
+.kpi-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--green); border-radius: 0 2px 0 0; }
+.kpi-bar-impulse { background: var(--impulse); }
+
+.sec-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); font-weight: 500; margin-bottom: 20px; }
+
+.chart-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+
+/* CATEGORIES */
+.cat-list { display: flex; flex-direction: column; gap: 12px; }
+.cat-row { display: flex; align-items: center; gap: 14px; }
+.cat-name { font-size: 13px; color: var(--ink2); width: 120px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-track { flex: 1; height: 8px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+.cat-fill { height: 100%; border-radius: 99px; transition: width 0.5s cubic-bezier(.22,1,.36,1); }
+.cat-val { font-size: 13px; color: var(--ink); font-weight: 500; width: 60px; text-align: right; flex-shrink: 0; }
+
+/* SPLIT */
+.split-block { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.split-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+.split-card.imp { border-top: 3px solid var(--impulse); }
+.split-card.del { border-top: 3px solid var(--green); }
+.split-big { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1; margin-bottom: 4px; }
+.split-big.imp { color: var(--impulse); }
+.split-big.del { color: var(--green); }
+.split-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); font-weight: 500; }
+.split-sub { font-size: 12px; color: var(--ink3); margin-top: 12px; line-height: 1.7; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* DOW */
+.dow-wrap { display: flex; gap: 8px; align-items: flex-end; height: 80px; margin-top: 8px; }
+.dow-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.dow-bar-outer { width: 100%; background: var(--bg2); border-radius: 4px 4px 0 0; height: 60px; display: flex; align-items: flex-end; }
+.dow-bar-inner { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(.22,1,.36,1); }
+.dow-label { font-size: 9px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* NARRATIVE */
+.narrative { background: var(--ink); color: #fff; border-radius: 10px; padding: 24px 28px; display: flex; flex-direction: column; gap: 10px; }
+.narrative-line { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+.narrative-line strong { color: var(--green-mid); font-weight: 500; }
+
+/* EMPTY */
+.viz-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 14px; opacity: 0.35; padding: 80px 0; }
+.viz-empty p { font-size: 13px; color: var(--ink3); text-align: center; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="left">
+    <div>
+      <div class="wordmark">spending<br><span>habits</span></div>
+      <div class="tagline">track where your money actually goes</div>
+    </div>
+
+    <div>
+      <div class="section-label">Log a purchase</div>
+      <div class="field"><label>Date</label><input type="date" id="f-date"></div>
+      <div class="field"><label>Amount ($)</label><input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field">
+        <label>Category</label>
+        <select id="f-cat">
+          <option value="">Select...</option>
+          <option>Food & Drink</option>
+          <option>Shopping</option>
+          <option>Transport</option>
+          <option>Entertainment</option>
+          <option>Health & Beauty</option>
+          <option>Subscriptions</option>
+          <option>Home</option>
+          <option>Education</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Was this planned?</label>
+        <div class="type-row">
+          <button class="type-btn" id="btn-imp" onclick="setType('impulse')">Impulse</button>
+          <button class="type-btn" id="btn-del" onclick="setType('deliberate')">Deliberate</button>
+        </div>
+      </div>
+      <button class="log-btn" onclick="logTx()">Log purchase</button>
+    </div>
+
+    <hr class="divider">
+
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0;gap:0">
+      <div class="section-label">History</div>
+      <div class="history" id="history">
+        <div class="empty">No transactions yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right" id="right">
+    <div class="viz-empty" id="viz-empty">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="6" y="28" width="10" height="14" rx="2" fill="currentColor" opacity="0.3"/>
+        <rect x="19" y="18" width="10" height="24" rx="2" fill="currentColor" opacity="0.5"/>
+        <rect x="32" y="8" width="10" height="34" rx="2" fill="currentColor" opacity="0.7"/>
+      </svg>
+      <p>Log a purchase to see<br>your spending story unfold.</p>
+    </div>
+
+    <div id="viz" style="display:none;flex-direction:column;gap:40px;">
+
+      <div>
+        <div class="sec-title">Overview</div>
+        <div class="kpi-row" id="kpi-row"></div>
+      </div>
+
+      <div class="narrative" id="narrative"></div>
+
+      <div>
+        <div class="sec-title">Impulse vs deliberate</div>
+        <div class="split-block" id="split-block"></div>
+      </div>
+
+      <div class="two-col">
+        <div class="chart-block">
+          <div class="sec-title">Spending by category</div>
+          <div class="cat-list" id="cat-list"></div>
+        </div>
+        <div class="chart-block">
+          <div class="sec-title">Day of the week</div>
+          <div class="dow-wrap" id="dow-wrap"></div>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <div class="sec-title">Spending over time</div>
+        <div style="position:relative;height:180px"><canvas id="chart-line"></canvas></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+let txs = [];
+let selType = '';
+let lineChart = null;
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const CAT_COLORS = {
+  'Food & Drink':'#2d6a4f','Shopping':'#e07b39','Transport':'#6a8cad',
+  'Entertainment':'#9b6aa8','Health & Beauty':'#c0762a','Subscriptions':'#4a9a7a',
+  'Home':'#7a6a4a','Education':'#4a7aaa','Other':'#888'
+};
+
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+
+function setType(t) {
+  selType = t;
+  document.getElementById('btn-imp').className = 'type-btn' + (t === 'impulse' ? ' sel-impulse' : '');
+  document.getElementById('btn-del').className = 'type-btn' + (t === 'deliberate' ? ' sel-deliberate' : '');
+}
+
+function logTx() {
+  const date = document.getElementById('f-date').value;
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  const cat = document.getElementById('f-cat').value;
+  if (!date || !amount || amount <= 0 || !cat || !selType) {
+    const missing = [];
+    if (!date) missing.push('date');
+    if (!amount || amount <= 0) missing.push('amount');
+    if (!cat) missing.push('category');
+    if (!selType) missing.push('impulse or deliberate');
+    alert('Please fill in: ' + missing.join(', '));
+    return;
+  }
+  txs.push({ date, amount, cat, type: selType });
+  txs.sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById('f-amount').value = '';
+  document.getElementById('f-cat').value = '';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  setType('');
+  render();
+}
+
+function fmt(n) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function render() {
+  if (!txs.length) return;
+  document.getElementById('viz-empty').style.display = 'none';
+  const viz = document.getElementById('viz');
+  viz.style.display = 'flex';
+  renderHistory();
+  renderKPIs();
+  renderNarrative();
+  renderSplit();
+  renderCats();
+  renderDoW();
+  renderLine();
+}
+
+function renderHistory() {
+  document.getElementById('history').innerHTML = txs.slice(0, 30).map(t => `
+    <div class="tx">
+      <div class="tx-dot" style="background:${t.type === 'impulse' ? 'var(--impulse)' : 'var(--green)'}"></div>
+      <div class="tx-info">
+        <div class="tx-cat">${t.cat}</div>
+        <div class="tx-date">${fmtDate(t.date)} · ${t.type}</div>
+      </div>
+      <div class="tx-amount">${fmt(t.amount)}</div>
+    </div>`).join('');
+}
+
+function renderKPIs() {
+  const total = txs.reduce((s, t) => s + t.amount, 0);
+  const avg = total / txs.length;
+  const imp = txs.filter(t => t.type === 'impulse');
+  const impPct = Math.round(imp.length / txs.length * 100);
+  const cats = {};
+  txs.forEach(t => cats[t.cat] = (cats[t.cat] || 0) + t.amount);
+  const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi kpi-accent">
+      <div class="kpi-label">Total spent</div>
+      <div class="kpi-val">${fmt(total)}</div>
+      <div class="kpi-sub">${txs.length} purchase${txs.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg per purchase</div>
+      <div class="kpi-val">${fmt(avg)}</div>
+      <div class="kpi-sub">across all categories</div>
+      <div class="kpi-bar" style="width:60%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Impulse rate</div>
+      <div class="kpi-val">${impPct}%</div>
+      <div class="kpi-sub">${imp.length} of ${txs.length} unplanned</div>
+      <div class="kpi-bar kpi-bar-impulse" style="width:${impPct}%"></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Top category</div>
+      <div class="kpi-val" style="font-size:20px;margin-top:4px">${topCat ? topCat[0].split(' ')[0] : '—'}</div>
+      <div class="kpi-sub">${topCat ? fmt(topCat[1]) + ' spent' : ''}</div>
+      <div class="kpi-bar" style="width:${topCat ? Math.round(topCat[1] / total * 100) : 0}%"></div>
+    </div>
+  `;
+}
+
+function renderNarrative() {
+  const total = txs.reduce((s, t) => s + t.amount, 0);
+  const imp = txs.filter(t => t.type === 'impulse');
+  const del = txs.filter(t => t.type === 'deliberate');
+  const impTotal = imp.reduce((s, t) => s + t.amount, 0);
+  const avgImp = imp.length ? impTotal / imp.length : 0;
+  const avgDel = del.length ? del.reduce((s, t) => s + t.amount, 0) / del.length : 0;
+  const cats = {};
+  txs.forEach(t => cats[t.cat] = (cats[t.cat] || 0) + t.amount);
+  const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+  const days = {};
+  txs.forEach(t => { const d = new Date(t.date + 'T12:00:00').getDay(); days[d] = (days[d] || 0) + t.amount; });
+  const busiestDay = Object.entries(days).sort((a, b) => b[1] - a[1])[0];
+  const lines = [];
+  if (topCat) lines.push(`Your spending is most concentrated in <strong>${topCat[0]}</strong>, accounting for <strong>${Math.round(topCat[1] / total * 100)}%</strong> of your total.`);
+  if (imp.length && del.length) lines.push(`Impulse purchases average <strong>${fmt(avgImp)}</strong> each — ${avgImp > avgDel ? 'more' : 'less'} than your deliberate average of <strong>${fmt(avgDel)}</strong>.`);
+  if (busiestDay) lines.push(`You tend to spend most on <strong>${DAYS[busiestDay[0]]}s</strong>.`);
+  document.getElementById('narrative').innerHTML = lines.map(l => `<div class="narrative-line">${l}</div>`).join('');
+}
+
+function renderSplit() {
+  const imp = txs.filter(t => t.type === 'impulse');
+  const del = txs.filter(t => t.type === 'deliberate');
+  const impTotal = imp.reduce((s, t) => s + t.amount, 0);
+  const delTotal = del.reduce((s, t) => s + t.amount, 0);
+  const total = impTotal + delTotal;
+  document.getElementById('split-block').innerHTML = `
+    <div class="split-card imp">
+      <div class="split-big imp">${total ? Math.round(impTotal / total * 100) : 0}%</div>
+      <div class="split-label">Impulse</div>
+      <div class="split-sub">${fmt(impTotal)} across ${imp.length} purchase${imp.length !== 1 ? 's' : ''}<br>things you didn't plan to buy</div>
+    </div>
+    <div class="split-card del">
+      <div class="split-big del">${total ? Math.round(delTotal / total * 100) : 0}%</div>
+      <div class="split-label">Deliberate</div>
+      <div class="split-sub">${fmt(delTotal)} across ${del.length} purchase${del.length !== 1 ? 's' : ''}<br>things you intended to spend on</div>
+    </div>
+  `;
+}
+
+function renderCats() {
+  const cats = {};
+  txs.forEach(t => cats[t.cat] = (cats[t.cat] || 0) + t.amount);
+  const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0]?.[1] || 1;
+  document.getElementById('cat-list').innerHTML = sorted.map(([cat, val]) => `
+    <div class="cat-row">
+      <div class="cat-name">${cat}</div>
+      <div class="cat-track"><div class="cat-fill" style="width:${Math.round(val / max * 100)}%;background:${CAT_COLORS[cat] || '#888'}"></div></div>
+      <div class="cat-val">${fmt(val)}</div>
+    </div>`).join('');
+}
+
+function renderDoW() {
+  const days = Array(7).fill(0);
+  txs.forEach(t => { const d = new Date(t.date + 'T12:00:00').getDay(); days[d] += t.amount; });
+  const max = Math.max(...days, 1);
+  document.getElementById('dow-wrap').innerHTML = days.map((v, i) => {
+    const h = Math.round((v / max) * 56);
+    const hasImp = txs.some(t => new Date(t.date + 'T12:00:00').getDay() === i && t.type === 'impulse');
+    return `<div class="dow-col">
+      <div class="dow-bar-outer">
+        <div class="dow-bar-inner" style="height:${h}px;background:${hasImp ? 'var(--impulse)' : 'var(--green)'}"></div>
+      </div>
+      <div class="dow-label">${DAYS[i].slice(0, 2)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLine() {
+  const byDate = {};
+  txs.forEach(t => byDate[t.date] = (byDate[t.date] || 0) + t.amount);
+  const sorted = Object.entries(byDate).sort((a, b) => a[0].localeCompare(b[0]));
+  const labels = sorted.map(([d]) => fmtDate(d));
+  const data = sorted.map(([, v]) => parseFloat(v.toFixed(2)));
+  const ctx = document.getElementById('chart-line').getContext('2d');
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: '#2d6a4f',
+        backgroundColor: 'rgba(45,106,79,0.07)',
+        borderWidth: 2,
+        pointBackgroundColor: '#2d6a4f',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ' + fmt(c.raw) } }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(28,28,26,0.05)' },
+          ticks: { color: '#9a9a90', font: { family: 'DM Sans', size: 11 }, maxRotation: 30 }
+        },
+        y: {
+          grid: { color: 'rgba(28,28,26,0.05)' },
+          ticks: { color: '#9a9a90', font: { family: 'DM Sans', size: 11 }, callback: v => '$' + v },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
