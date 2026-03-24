@@ -126,22 +126,27 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .cat-val { font-size: 13px; color: var(--ink); font-weight: 500; width: 60px; text-align: right; flex-shrink: 0; }
 
 /* SPLIT */
-.split-block { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.split-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
-.split-card.imp { border-top: 3px solid var(--impulse); }
-.split-card.del { border-top: 3px solid var(--green); }
+.split-block { display: block; }
+.split-bar-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.split-bar { display: flex; height: 48px; border-radius: 8px; overflow: hidden; }
+.split-bar-seg { display: flex; align-items: center; justify-content: center; transition: width 0.6s cubic-bezier(.22,1,.36,1); }
+.split-bar-seg span { font-size: 13px; font-weight: 500; color: #fff; letter-spacing: 0.02em; }
+.split-bar-imp { background: var(--impulse); }
+.split-bar-del { background: var(--green); }
+.split-labels { display: flex; justify-content: space-between; align-items: flex-start; }
+.split-info { display: flex; flex-direction: column; gap: 2px; }
 .split-big { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1; margin-bottom: 4px; }
 .split-big.imp { color: var(--impulse); }
 .split-big.del { color: var(--green); }
 .split-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); font-weight: 500; }
-.split-sub { font-size: 12px; color: var(--ink3); margin-top: 12px; line-height: 1.7; }
+.split-sub { font-size: 12px; color: var(--ink3); margin-top: 6px; line-height: 1.7; }
 
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 /* DOW */
-.dow-wrap { display: flex; gap: 8px; align-items: flex-end; height: 80px; margin-top: 8px; }
+.dow-wrap { display: flex; gap: 8px; align-items: flex-end; height: 190px; margin-top: 8px; }
 .dow-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
-.dow-bar-outer { width: 100%; background: var(--bg2); border-radius: 4px 4px 0 0; height: 60px; display: flex; align-items: flex-end; }
+.dow-bar-outer { width: 100%; background: var(--bg2); border-radius: 4px 4px 0 0; height: 160px; display: flex; align-items: flex-end; }
 .dow-bar-inner { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(.22,1,.36,1); }
 .dow-label { font-size: 9px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; }
 
@@ -153,6 +158,31 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 /* EMPTY */
 .viz-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 14px; opacity: 0.35; padding: 80px 0; }
 .viz-empty p { font-size: 13px; color: var(--ink3); text-align: center; line-height: 1.7; }
+
+/* Custom Select */
+.custom-select { position: relative; width: 100%; }
+.cs-selected {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; border: 1px solid var(--border); background: var(--bg);
+  border-radius: 6px; cursor: pointer; font-size: 13px; transition: border-color 0.15s;
+}
+.cs-selected:hover { border-color: var(--ink3); }
+.cs-selected.open { border-color: var(--green); }
+.cs-dropdown {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  z-index: 100; overflow: hidden;
+  box-shadow: 0 4px 16px rgba(28,28,26,0.08);
+}
+.cs-dropdown.open { display: block; }
+.cs-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; cursor: pointer; font-size: 13px; transition: background 0.1s;
+}
+.cs-option:hover { background: var(--bg); }
+.cs-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+
 </style>
 </head>
 <body>
@@ -171,18 +201,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
       <div class="field"><label>Amount ($)</label><input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0"></div>
       <div class="field">
         <label>Category</label>
-        <select id="f-cat">
-          <option value="">Select...</option>
-          <option>Food & Drink</option>
-          <option>Shopping</option>
-          <option>Transport</option>
-          <option>Entertainment</option>
-          <option>Health & Beauty</option>
-          <option>Subscriptions</option>
-          <option>Home</option>
-          <option>Education</option>
-          <option>Other</option>
-        </select>
+        <div class="custom-select" id="cat-select">
+  <div class="cs-selected" id="cs-selected" onclick="toggleSelect()">
+    <span id="cs-label" style="color:var(--ink3)">Select...</span>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="cs-dropdown" id="cs-dropdown">
+    <div class="cs-option" onclick="selectCat('', '')"><span style="color:var(--ink3)">Select...</span></div>
+    <div class="cs-option" onclick="selectCat('Food & Drink', '#2d6a4f')"><span class="cs-dot" style="background:#2d6a4f"></span><span style="color:#2d6a4f">Food & Drink</span></div>
+    <div class="cs-option" onclick="selectCat('Shopping', '#e07b39')"><span class="cs-dot" style="background:#e07b39"></span><span style="color:#e07b39">Shopping</span></div>
+    <div class="cs-option" onclick="selectCat('Transport', '#6a8cad')"><span class="cs-dot" style="background:#6a8cad"></span><span style="color:#6a8cad">Transport</span></div>
+    <div class="cs-option" onclick="selectCat('Entertainment', '#9b6aa8')"><span class="cs-dot" style="background:#9b6aa8"></span><span style="color:#9b6aa8">Entertainment</span></div>
+    <div class="cs-option" onclick="selectCat('Health & Beauty', '#c0762a')"><span class="cs-dot" style="background:#c0762a"></span><span style="color:#c0762a">Health & Beauty</span></div>
+    <div class="cs-option" onclick="selectCat('Subscriptions', '#4a9a7a')"><span class="cs-dot" style="background:#4a9a7a"></span><span style="color:#4a9a7a">Subscriptions</span></div>
+    <div class="cs-option" onclick="selectCat('Home', '#7a6a4a')"><span class="cs-dot" style="background:#7a6a4a"></span><span style="color:#7a6a4a">Home</span></div>
+    <div class="cs-option" onclick="selectCat('Education', '#4a7aaa')"><span class="cs-dot" style="background:#4a7aaa"></span><span style="color:#4a7aaa">Education</span></div>
+    <div class="cs-option" onclick="selectCat('Other', '#888')"><span class="cs-dot" style="background:#888"></span><span style="color:#888">Other</span></div>
+  </div>
+</div>
       </div>
       <div class="field">
         <label>Was this planned?</label>
@@ -299,7 +335,7 @@ function setType(t) {
 function logTx() {
   const date = document.getElementById('f-date').value;
   const amount = parseFloat(document.getElementById('f-amount').value);
-  const cat = document.getElementById('f-cat').value;
+  const cat = selectedCat; // changed
   if (!date || !amount || amount <= 0 || !cat || !selType) {
     const missing = [];
     if (!date) missing.push('date');
@@ -312,7 +348,7 @@ function logTx() {
   txs.push({ date, amount, cat, type: selType });
   txs.sort((a, b) => b.date.localeCompare(a.date));
   document.getElementById('f-amount').value = '';
-  document.getElementById('f-cat').value = '';
+  selectCat('', ''); // changed — resets the custom dropdown
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   setType('');
   saveToServer();
@@ -450,20 +486,33 @@ function renderSplit() {
   const impTotal = imp.reduce((s, t) => s + t.amount, 0);
   const delTotal = del.reduce((s, t) => s + t.amount, 0);
   const total = impTotal + delTotal;
+  const impPct = total ? Math.round(impTotal / total * 100) : 0;
+  const delPct = 100 - impPct;
   document.getElementById('split-block').innerHTML = `
-    <div class="split-card imp">
-      <div class="split-big imp">${total ? Math.round(impTotal / total * 100) : 0}%</div>
-      <div class="split-label">Impulse</div>
-      <div class="split-sub">${fmt(impTotal)} across ${imp.length} purchase${imp.length !== 1 ? 's' : ''}<br>things you didn't plan to buy</div>
-    </div>
-    <div class="split-card del">
-      <div class="split-big del">${total ? Math.round(delTotal / total * 100) : 0}%</div>
-      <div class="split-label">Deliberate</div>
-      <div class="split-sub">${fmt(delTotal)} across ${del.length} purchase${del.length !== 1 ? 's' : ''}<br>things you intended to spend on</div>
+    <div class="split-bar-wrap">
+      <div class="split-bar">
+        <div class="split-bar-seg split-bar-imp" style="width:${impPct}%">
+          ${impPct > 12 ? `<span>Impulse</span>` : ''}
+        </div>
+        <div class="split-bar-seg split-bar-del" style="width:${delPct}%">
+          ${delPct > 12 ? `<span>Deliberate</span>` : ''}
+        </div>
+      </div>
+      <div class="split-labels">
+        <div class="split-info">
+          <div class="split-big imp">${impPct}%</div>
+          <div class="split-label">Impulse</div>
+          <div class="split-sub">${fmt(impTotal)} across ${imp.length} purchase${imp.length !== 1 ? 's' : ''}<br>things you didn't plan to buy</div>
+        </div>
+        <div class="split-info" style="text-align:right">
+          <div class="split-big del">${delPct}%</div>
+          <div class="split-label">Deliberate</div>
+          <div class="split-sub">${fmt(delTotal)} across ${del.length} purchase${del.length !== 1 ? 's' : ''}<br>things you intended to spend on</div>
+        </div>
+      </div>
     </div>
   `;
 }
-
 function renderCats() {
   const cats = {};
   txs.forEach(t => cats[t.cat] = (cats[t.cat] || 0) + t.amount);
@@ -482,7 +531,7 @@ function renderDoW() {
   txs.forEach(t => { const d = new Date(t.date + 'T12:00:00').getDay(); days[d] += t.amount; });
   const max = Math.max(...days, 1);
   document.getElementById('dow-wrap').innerHTML = days.map((v, i) => {
-    const h = Math.round((v / max) * 56);
+    const h = Math.round((v / max) * 160);
     const hasImp = txs.some(t => new Date(t.date + 'T12:00:00').getDay() === i && t.type === 'impulse');
     return `<div class="dow-col">
       <div class="dow-bar-outer">
@@ -538,6 +587,31 @@ function renderLine() {
     }
   });
 }
+
+let selectedCat = '';
+
+function toggleSelect() {
+  const dropdown = document.getElementById('cs-dropdown');
+  const selected = document.getElementById('cs-selected');
+  dropdown.classList.toggle('open');
+  selected.classList.toggle('open');
+}
+
+function selectCat(val, color) {
+  selectedCat = val;
+  const label = document.getElementById('cs-label');
+  label.textContent = val || 'Select...';
+  label.style.color = color || 'var(--ink3)';
+  document.getElementById('cs-dropdown').classList.remove('open');
+  document.getElementById('cs-selected').classList.remove('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('cat-select').contains(e.target)) {
+    document.getElementById('cs-dropdown').classList.remove('open');
+    document.getElementById('cs-selected').classList.remove('open');
+  }
+});
 
 // ── INIT ──
 loadFromServer();
